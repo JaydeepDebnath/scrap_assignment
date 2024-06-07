@@ -22,9 +22,21 @@ def start_scraping(request):
         return Response({'Error': 'No acronyms provided'}, status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        result = scrape_crypto_data.delay(acronyms)
+        # result = scrape_crypto_data.delay(acronyms)
+        result = scrape_crypto_data.apply(args=(acronyms,))
         job_id = result.id
-        return Response({'job_id': job_id}, status=status.HTTP_200_OK)
+
+        scraped_data = result.get()
+
+        tasks =[]
+
+        for acronym in acronyms:
+            task_data = {'coin':acronym,'status':'complete','output':scraped_data.get(acronym,{'Error':'Failed to fetch data'})}
+            tasks.append(task_data)
+
+
+        response_data = {'job_id':job_id,'tasks':tasks}
+        return Response(response_data, status=status.HTTP_200_OK)
       
     except TaskError as e:
          return Response({'Error':'str(e)'},status=status.HTTP_500_INTERNAL_SERVER_ERROR)

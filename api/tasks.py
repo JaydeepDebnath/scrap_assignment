@@ -2,6 +2,7 @@ from celery import shared_task
 from bs4 import BeautifulSoup
 import requests
 from .models import CoinMarketCap
+from django.http import JsonResponse
 
 @shared_task
 def scrape_crypto_data(acronyms):
@@ -13,25 +14,32 @@ def scrape_crypto_data(acronyms):
         response = requests.get(url)
 
         if response.status_code == 200:
-            soup = BeautifulSoup(response.content,'html.parser')
-            price = soup.find('span', class_='price').text.strip()
-            marketCap = soup.find('span', class_='market_cap').text.strip()
-            volume = soup.find('span', class_='volume-24h').text.strip()
-            circulatingSupply = soup.find('span', class_='circulating-supply').text.strip()
+            try:
+                coin = CoinMarketCap.objects.get(acronym=acronym)
 
-            coin, created = CoinMarketCap.objects.get_or_create(acronym=acronym)
-            coin.price = price
-            coin.marketCap = marketCap
-            coin.volume = volume
-            coin.circulatingSupply = circulatingSupply
-            coin.save()
 
-            scraped_data[acronym] = {
-                'Price': price,
-                'marketCap': marketCap,
-                'volume': volume,
-                'circulatingSupply': circulatingSupply
-            }
+                output = {
+                    'coin':acronym,
+                    'output':{
+                        'price': coin.price,
+                        'price_change': coin.price_change,
+                        'market_cap': coin.market_cap,
+                        'market_cap_rank': coin.market_cap_rank,
+                        'volume': coin.volume,
+                        'volume_rank': coin.volume_rank,
+                        'volume_change': coin.volume_change,
+                        'circulating_supply': coin.circulating_supply,
+                        'total_supply': coin.total_supply,
+                        'diluted_market_cap': coin.diluted_market_cap,
+                        'contracts': coin.contracts,
+                        'official_links': coin.official_links,
+                        'socials': coin.socials, 
+                    }
+                }
+                scraped_data.append(output)
+            except CoinMarketCap.DoesNotExist as e:
+                return JsonResponse({'Error':str(e)})
+
         else:
             scraped_data[acronym] = {'Error': 'Failed to fetch data'}
 

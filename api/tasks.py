@@ -31,9 +31,9 @@ def scrape_crypto_data(acronyms):
                         'circulating_supply': coin.circulating_supply,
                         'total_supply': coin.total_supply,
                         'diluted_market_cap': coin.diluted_market_cap,
-                        'contracts': coin.contracts,
-                        'official_links': coin.official_links,
-                        'socials': coin.socials, 
+                        'contracts': [],
+                        'official_links': [],
+                        'socials': [], 
                     }
                 }
                 scraped_data.append(output)
